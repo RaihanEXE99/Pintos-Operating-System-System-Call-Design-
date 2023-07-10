@@ -1,25 +1,6 @@
 #ifndef __LIB_KERNEL_HASH_H
 #define __LIB_KERNEL_HASH_H
 
-/* Hash table.
-
-   This data structure is thoroughly documented in the Tour of
-   Pintos for Project 3.
-
-   This is a standard hash table with chaining.  To locate an
-   element in the table, we compute a hash function over the
-   element's data and use that as an index into an array of
-   doubly linked lists, then linearly search the list.
-
-   The chain lists do not use dynamic allocation.  Instead, each
-   structure that can potentially be in a hash must embed a
-   struct hash_elem member.  All of the hash functions operate on
-   these `struct hash_elem's.  The hash_entry macro allows
-   conversion from a struct hash_elem back to a structure object
-   that contains it.  This is the same technique used in the
-   linked list implementation.  Refer to lib/kernel/list.h for a
-   detailed explanation. */
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -1,15 +1,14 @@
-# Install Process
-cd to threads folder then,
-make threads
+# PintOS Project
 
-cd to examples folder then,
-make examples 
+Team 16 : Jongwook Choi, Jaeheum Jeong
 
-cd to userprog folder then,
-make userprog 
+## Project 1
 
-cd userprog/build
-pintos-mkdisk filesys.dsk --filesys-size=2
+- Wait Queue
+- Basic Priority Scheduling
 
-cd to utils folder then,
-make utils
+## Project 2
+
+- User Program Exeuction
+- Process Management
+- System Calls

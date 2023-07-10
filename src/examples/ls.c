@@ -1,3 +1,13 @@
+/* ls.c
+
+   Lists the contents of the directory or directories named on
+   the command line, or of the current directory if none are
+   named.
+
+   By default, only the name of each file is printed.  If "-l" is
+   given as the first argument, the type, size, and inumber of
+   each file is also printed.  This won't work until project 4. */
+
 #include <syscall.h>
 #include <stdio.h>
 #include <string.h>

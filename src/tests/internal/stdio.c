@@ -1,4 +1,11 @@
+/* Test program for printf() in lib/stdio.c.
 
+   Attempts to test printf() functionality that is not
+   sufficiently tested elsewhere in Pintos.
+
+   This is not a test we will run on your submitted projects.
+   It is here for completeness.
+*/
 
 #undef NDEBUG
 #include <limits.h>

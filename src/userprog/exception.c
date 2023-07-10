@@ -109,17 +109,6 @@ kill (struct intr_frame *f)
     }
 }
 
-/* Page fault handler.  This is a skeleton that must be filled in
-   to implement virtual memory.  Some solutions to project 2 may
-   also require modifying this code.
-
-   At entry, the address that faulted is in CR2 (Control Register
-   2) and information about the fault, formatted as described in
-   the PF_* macros in exception.h, is in F's error_code member.  The
-   example code here shows how to parse that information.  You
-   can find more information about both of these in the
-   description of "Interrupt 14--Page Fault Exception (#PF)" in
-   [IA32-v3a] section 5.15 "Exception and Interrupt Reference". */
 static void
 page_fault (struct intr_frame *f)
 {

@@ -1,15 +1,4 @@
-/* Insult.c
 
-   This is a version of the famous CS 107 random sentence
-   generator.  I wrote a program that reads a grammar definition
-   file and writes a C file containing that grammar as hard code
-   static C strings.  Thus the majority of the code below in
-   machine generated and totally unreadable.  The arrays created
-   are specially designed to make generating the sentences as
-   easy as possible.
-
-   Originally by Greg Hutchins, March 1998.
-   Modified by Ben Pfaff for Pintos, Sept 2004. */
 char *start[] =
   { "You", "1", "5", ".", "May", "13", ".", "With", "the", "19", "of", "18",
 ",", "may", "13", "."
@@ -310,10 +299,6 @@ main (int argc, char *argv[])
 	  if (++i >= argc)
 	    usage (-1, "Missing value for -f");
 
-          /* Because files have fixed length in the basic Pintos
-             file system, the 0 argument means that this option
-             will not be useful until project 4 is
-             implemented. */
 	  create (argv[i], 0);
 	  handle = open (argv[i]);
           if (handle < 0)

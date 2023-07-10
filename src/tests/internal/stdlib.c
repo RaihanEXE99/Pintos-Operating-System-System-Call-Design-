@@ -1,12 +1,3 @@
-/* Test program for sorting and searching in lib/stdlib.c.
-
-   Attempts to test the sorting and searching functionality that
-   is not sufficiently tested elsewhere in Pintos.
-
-   This is not a test we will run on your submitted projects.
-   It is here for completeness.
-*/
-
 #undef NDEBUG
 #include <debug.h>
 #include <limits.h>

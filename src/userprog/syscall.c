@@ -13,13 +13,6 @@
 #include "threads/synch.h"
 #include "lib/kernel/list.h"
 
-
-#ifdef DEBUG
-#define _DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-#define _DEBUG_PRINTF(...) /* do nothing */
-#endif
-
 static void syscall_handler (struct intr_frame *);
 
 static void check_user (const uint8_t *uaddr);
@@ -29,20 +22,8 @@ static int memread_user (void *src, void *des, size_t bytes);
 
 static struct file_desc* find_file_desc(struct thread *, int fd);
 
-void sys_halt (void);
-void sys_exit (int);
-pid_t sys_exec (const char *cmdline);
-int sys_wait (pid_t pid);
-
-bool sys_create(const char* filename, unsigned initial_size);
-bool sys_remove(const char* filename);
-int sys_open(const char* file);
-int sys_filesize(int fd);
-void sys_seek(int fd, unsigned position);
 unsigned sys_tell(int fd);
-void sys_close(int fd);
-int sys_read(int fd, void *buffer, unsigned size);
-int sys_write(int fd, const void *buffer, unsigned size);
+
 
 struct lock filesys_lock;
 
@@ -69,169 +50,24 @@ syscall_handler (struct intr_frame *f)
   ASSERT( sizeof(syscall_number) == 4 );
   memread_user(f->esp, &syscall_number, sizeof(syscall_number));
 
-  _DEBUG_PRINTF ("[DEBUG] system call, number = %d!\n", syscall_number);
-
   switch (syscall_number) {
-  case SYS_HALT: 
-    {
-      sys_halt();
-      NOT_REACHED();
+    case SYS_TELL: 
+      {
+        int fd;
+        unsigned return_code;
+
+        memread_user(f->esp + 4, &fd, sizeof(fd));
+
+        return_code = sys_tell(fd);
+        f->eax = (uint32_t) return_code;
+        break;
+      }
+    default:
+      printf("System call %d is unimplemented!\n", syscall_number);
+      sys_exit(-1);
       break;
-    }
-
-  case SYS_EXIT: 
-    {
-      int exitcode;
-      memread_user(f->esp + 4, &exitcode, sizeof(exitcode));
-
-      sys_exit(exitcode);
-      NOT_REACHED();
-      break;
-    }
-
-  case SYS_EXEC: 
-    {
-      void* cmdline;
-      memread_user(f->esp + 4, &cmdline, sizeof(cmdline));
-
-      int return_code = sys_exec((const char*) cmdline);
-      f->eax = (uint32_t) return_code;
-      break;
-    }
-
-  case SYS_WAIT: 
-    {
-      pid_t pid;
-      memread_user(f->esp + 4, &pid, sizeof(pid_t));
-
-      int ret = sys_wait(pid);
-      f->eax = (uint32_t) ret;
-      break;
-    }
-
-  case SYS_CREATE: 
-    {
-      const char* filename;
-      unsigned initial_size;
-      bool return_code;
-
-      memread_user(f->esp + 4, &filename, sizeof(filename));
-      memread_user(f->esp + 8, &initial_size, sizeof(initial_size));
-
-      return_code = sys_create(filename, initial_size);
-      f->eax = return_code;
-      break;
-    }
-
-  case SYS_REMOVE: 
-    {
-      const char* filename;
-      bool return_code;
-
-      memread_user(f->esp + 4, &filename, sizeof(filename));
-
-      return_code = sys_remove(filename);
-      f->eax = return_code;
-      break;
-    }
-
-  case SYS_OPEN: 
-    {
-      const char* filename;
-      int return_code;
-
-      memread_user(f->esp + 4, &filename, sizeof(filename));
-
-      return_code = sys_open(filename);
-      f->eax = return_code;
-      break;
-    }
-
-  case SYS_FILESIZE: 
-    {
-      int fd, return_code;
-      memread_user(f->esp + 4, &fd, sizeof(fd));
-
-      return_code = sys_filesize(fd);
-      f->eax = return_code;
-      break;
-    }
-
-  case SYS_READ: 
-    {
-      int fd, return_code;
-      void *buffer;
-      unsigned size;
-
-      memread_user(f->esp + 4, &fd, sizeof(fd));
-      memread_user(f->esp + 8, &buffer, sizeof(buffer));
-      memread_user(f->esp + 12, &size, sizeof(size));
-
-      return_code = sys_read(fd, buffer, size);
-      f->eax = (uint32_t) return_code;
-      break;
-    }
-
-  case SYS_WRITE: 
-    {
-      int fd, return_code;
-      const void *buffer;
-      unsigned size;
-
-      memread_user(f->esp + 4, &fd, sizeof(fd));
-      memread_user(f->esp + 8, &buffer, sizeof(buffer));
-      memread_user(f->esp + 12, &size, sizeof(size));
-
-      return_code = sys_write(fd, buffer, size);
-      f->eax = (uint32_t) return_code;
-      break;
-    }
-
-  case SYS_SEEK: 
-    {
-      int fd;
-      unsigned position;
-
-      memread_user(f->esp + 4, &fd, sizeof(fd));
-      memread_user(f->esp + 8, &position, sizeof(position));
-
-      sys_seek(fd, position);
-      break;
-    }
-
-  case SYS_TELL: 
-    {
-      int fd;
-      unsigned return_code;
-
-      memread_user(f->esp + 4, &fd, sizeof(fd));
-
-      return_code = sys_tell(fd);
-      f->eax = (uint32_t) return_code;
-      break;
-    }
-
-  case SYS_CLOSE: 
-    {
-      int fd;
-      memread_user(f->esp + 4, &fd, sizeof(fd));
-
-      sys_close(fd);
-      break;
-    }
-
-  default:
-    printf("[ERROR] system call %d is unimplemented!\n", syscall_number);
-
-    sys_exit(-1);
-    break;
   }
 
-}
-
-
-void sys_halt(void) {
-  shutdown_power_off();
 }
 
 void sys_exit(int status) {
@@ -244,108 +80,6 @@ void sys_exit(int status) {
   }
 
   thread_exit();
-}
-
-pid_t sys_exec(const char *cmdline) {
-  _DEBUG_PRINTF ("[DEBUG] Exec : %s\n", cmdline);
-
-
-  check_user((const uint8_t*) cmdline);
-
-  lock_acquire (&filesys_lock); 
-  pid_t pid = process_execute(cmdline);
-  lock_release (&filesys_lock);
-  return pid;
-}
-
-int sys_wait(pid_t pid) {
-  _DEBUG_PRINTF ("[DEBUG] Wait : %d\n", pid);
-  return process_wait(pid);
-}
-
-bool sys_create(const char* filename, unsigned initial_size) {
-  bool return_code;
-
-  // memory validation
-  check_user((const uint8_t*) filename);
-
-  lock_acquire (&filesys_lock);
-  return_code = filesys_create(filename, initial_size);
-  lock_release (&filesys_lock);
-  return return_code;
-}
-
-bool sys_remove(const char* filename) {
-  bool return_code;
-
-  check_user((const uint8_t*) filename);
-
-  lock_acquire (&filesys_lock);
-  return_code = filesys_remove(filename);
-  lock_release (&filesys_lock);
-  return return_code;
-}
-
-int sys_open(const char* file) {
-
-  check_user((const uint8_t*) file);
-
-  struct file* file_opened;
-  struct file_desc* fd = palloc_get_page(0);
-  if (!fd) {
-    return -1;
-  }
-
-  lock_acquire (&filesys_lock);
-  file_opened = filesys_open(file);
-  if (!file_opened) {
-    palloc_free_page (fd);
-    lock_release (&filesys_lock);
-    return -1;
-  }
-
-  fd->file = file_opened; 
-
-  struct list* fd_list = &thread_current()->file_descriptors;
-  if (list_empty(fd_list)) {
-    fd->id = 3;
-  }
-  else {
-    fd->id = (list_entry(list_back(fd_list), struct file_desc, elem)->id) + 1;
-  }
-  list_push_back(fd_list, &(fd->elem));
-
-  lock_release (&filesys_lock);
-  return fd->id;
-}
-
-int sys_filesize(int fd) {
-  struct file_desc* file_d;
-
-  lock_acquire (&filesys_lock);
-  file_d = find_file_desc(thread_current(), fd);
-
-  if(file_d == NULL) {
-    lock_release (&filesys_lock);
-    return -1;
-  }
-
-  int ret = file_length(file_d->file);
-  lock_release (&filesys_lock);
-  return ret;
-}
-
-void sys_seek(int fd, unsigned position) {
-  lock_acquire (&filesys_lock);
-  struct file_desc* file_d = find_file_desc(thread_current(), fd);
-
-  if(file_d && file_d->file) {
-    file_seek(file_d->file, position);
-  }
-  else
-    return; 
-
-  lock_release (&filesys_lock);
 }
 
 unsigned sys_tell(int fd) {
@@ -363,73 +97,6 @@ unsigned sys_tell(int fd) {
   return ret;
 }
 
-void sys_close(int fd) {
-  lock_acquire (&filesys_lock);
-  struct file_desc* file_d = find_file_desc(thread_current(), fd);
-
-  if(file_d && file_d->file) {
-    file_close(file_d->file);
-    list_remove(&(file_d->elem));
-    palloc_free_page(file_d);
-  }
-  lock_release (&filesys_lock);
-}
-
-int sys_read(int fd, void *buffer, unsigned size) {
-  check_user((const uint8_t*) buffer);
-  check_user((const uint8_t*) buffer + size - 1);
-
-  lock_acquire (&filesys_lock);
-  int ret;
-
-  if(fd == 0) { 
-    unsigned i;
-    for(i = 0; i < size; ++i) {
-      if(! put_user(buffer + i, input_getc()) ) {
-        lock_release (&filesys_lock);
-        sys_exit(-1);
-      }
-    }
-    ret = size;
-  }
-  else {
-    struct file_desc* file_d = find_file_desc(thread_current(), fd);
-
-    if(file_d && file_d->file) {
-      ret = file_read(file_d->file, buffer, size);
-    }
-    else
-      ret = -1;
-  }
-
-  lock_release (&filesys_lock);
-  return ret;
-}
-
-int sys_write(int fd, const void *buffer, unsigned size) {
-  check_user((const uint8_t*) buffer);
-  check_user((const uint8_t*) buffer + size - 1);
-
-  lock_acquire (&filesys_lock);
-  int ret;
-
-  if(fd == 1) { 
-    putbuf(buffer, size);
-    ret = size;
-  }
-  else {
-    struct file_desc* file_d = find_file_desc(thread_current(), fd);
-
-    if(file_d && file_d->file) {
-      ret = file_write(file_d->file, buffer, size);
-    }
-    else 
-      ret = -1;
-  }
-
-  lock_release (&filesys_lock);
-  return ret;
-}
 
 static void
 check_user (const uint8_t *uaddr) {
@@ -500,3 +167,4 @@ find_file_desc(struct thread *t, int fd)
 
   return NULL;
 }
+
